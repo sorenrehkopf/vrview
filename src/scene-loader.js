@@ -65,14 +65,14 @@ SceneLoader.prototype.loadFromJson_ = function(url, callback) {
  */
 SceneLoader.prototype.loadFromGetParams_ = function() {
   var params = {
-    image: Util.getQueryParameter(Query.IMAGE_URL),
-    video: Util.getQueryParameter(Query.VIDEO_URL),
-    object: Util.getQueryParameter(Query.OBJECT_URL),
-    preview: Util.getQueryParameter(Query.PREVIEW_URL),
-    isStereo: this.parseBoolean_(Util.getQueryParameter(Query.IS_STEREO)),
-    audio: Util.getQueryParameter(Query.AUDIO_URL),
-    isYawOnly: this.parseBoolean_(Util.getQueryParameter(Query.IS_YAW_ONLY)),
-    yaw: THREE.Math.degToRad(Util.getQueryParameter(Query.START_YAW)),
+    image: Util.getAttributeParameter(Query.IMAGE_URL)||Util.getQueryParameter(Query.IMAGE_URL),
+    video: Util.getAttributeParameter(Query.VIDEO_URL)||Util.getQueryParameter(Query.VIDEO_URL),
+    object: Util.getAttributeParameter(Query.OBJECT_URL)||Util.getQueryParameter(Query.OBJECT_URL),
+    preview: Util.getAttributeParameter(Query.PREVIEW_URL)||Util.getQueryParameter(Query.PREVIEW_URL),
+    isStereo: this.parseBoolean_(Util.getAttributeParameter(Query.IS_STEREO)||Util.getQueryParameter(Query.IS_STEREO)),
+    audio: Util.getAttributeParameter(Query.AUDIO_URL)||Util.getQueryParameter(Query.AUDIO_URL),
+    isYawOnly: this.parseBoolean_(Util.getAttributeParameter(Query.IS_YAW_ONLY)||Util.getQueryParameter(Query.IS_YAW_ONLY)),
+    yaw: THREE.Math.degToRad(Util.getAttributeParameter(Query.START_YAW)||Util.getQueryParameter(Query.START_YAW)),
   };
 
   var count = 0;
@@ -98,10 +98,10 @@ SceneLoader.prototype.parseBoolean_ = function(value) {
 
 SceneLoader.prototype.loadScene = function(callback) {
   // If there's a url param specified, try loading from JSON.
-  var url = Util.getQueryParameter('url');
-  var image = Util.getQueryParameter('image');
-  var video = Util.getQueryParameter('video');
-  var object = Util.getQueryParameter('object');
+  var url = Util.getAttributeParameter('url')||Util.getQueryParameter('url');
+  var image = Util.getAttributeParameter('image')||Util.getQueryParameter('image');
+  var video = Util.getAttributeParameter('video')||Util.getQueryParameter('video');
+  var object = Util.getAttributeParameter('object')||Util.getQueryParameter('object');
   if (url) {
     this.loadFromJson_(url);
   } else if (image || video || object) {

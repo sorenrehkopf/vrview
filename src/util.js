@@ -97,6 +97,17 @@ Util.getQueryParameter = function(name) {
   return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 };
 
+Util.getAttributeParameter = function(name){
+  var element = document.querySelector('[googleVR]');
+  if(element){
+    var attrName = 'googleVR-'+name;
+    var attr = element.attributes[attrName];
+    if(attr){
+      return attr.value;
+    }
+  }
+}
+
 
 // From http://stackoverflow.com/questions/11871077/proper-way-to-detect-webgl-support.
 Util.isWebGLEnabled = function() {

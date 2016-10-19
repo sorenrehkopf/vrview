@@ -28,23 +28,26 @@ function PhotosphereRenderer() {
 PhotosphereRenderer.prototype = new Emitter();
 
 PhotosphereRenderer.prototype.init = function() {
-  var container = document.querySelector('body');
-  var camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 100);
+  var container = document.querySelector('[googleVR]')||document.querySelector('body');
+  // var height = 
+  var camera = new THREE.PerspectiveCamera(80, container.clientHeight / container.clientWidth, 0.1, 100);
   var cameraDummy = new THREE.Object3D();
   cameraDummy.add(camera);
 
   // Antialiasing temporarily disabled to improve performance.
   var renderer = new THREE.WebGLRenderer({antialias: false});
   renderer.setClearColor(0x000000, 0);
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(container.clientHeight, container.clientWidth);
 
   // Round down fractional DPR values for better performance.
   renderer.setPixelRatio(Math.max(1, Math.floor(window.devicePixelRatio)));
   container.appendChild(renderer.domElement);
+  renderer.domElement.style.maxHeight = container.clientHeight+'px';
+  renderer.domElement.style.maxWidth = container.clientWidth+'px';
 
   var controls = new THREE.VRControls(camera);
   var effect = new THREE.VREffect(renderer);
-  effect.setSize(window.innerWidth, window.innerHeight);
+  effect.setSize(container.clientHeight, container.clientWidth);
 
   this.camera = camera;
   this.renderer = renderer;
@@ -218,7 +221,7 @@ PhotosphereRenderer.prototype.updateRenderRect_ = function() {
     leftRect.height /= dpr;
 
     var rightRect = Util.clone(leftRect);
-    rightRect.x = (window.innerWidth - leftRect.x) - leftRect.width;
+    rightRect.x = (container.clientHeight - leftRect.x) - leftRect.width;
 
     this.hmd.setRenderRect(leftRect, rightRect);
   }
