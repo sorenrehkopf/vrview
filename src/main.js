@@ -17,6 +17,10 @@
 // vertex-based distortion.
 WebVRConfig = window.WebVRConfig || {}
 WebVRConfig.PREVENT_DISTORTION = true;
+window.element = document.querySelector('[googleVR]')||document.body;
+if(element!==document.body){
+  console.log('================',element.style);
+}
 
 // Initialize the loading indicator as quickly as possible to give the user
 // immediate feedback.
@@ -140,7 +144,7 @@ function onVideoLoad() {
   } else {
     // Tell user to tap to start.
     showError('Tap to start video', 'Play');
-    document.body.addEventListener('touchend', onVideoTap);
+    element.addEventListener('touchend', onVideoTap);
   }
 
   // Prevent onVideoLoad from firing multiple times.
@@ -152,7 +156,7 @@ function onVideoTap() {
   videoElement.play();
 
   // Prevent multiple play() calls on the video element.
-  document.body.removeEventListener('touchend', onVideoTap);
+  element.removeEventListener('touchend', onVideoTap);
 }
 
 function onRenderLoad() {
@@ -197,7 +201,7 @@ function showStats() {
   stats.domElement.style.position = 'absolute';
   stats.domElement.style.left = '0px';
   stats.domElement.style.bottom = '0px';
-  document.body.appendChild(stats.domElement);
+  element.appendChild(stats.domElement);
 }
 
 function loop(time) {
