@@ -42,8 +42,8 @@ PhotosphereRenderer.prototype.init = function() {
   // Round down fractional DPR values for better performance.
   renderer.setPixelRatio(Math.max(1, Math.floor(window.devicePixelRatio)));
   container.appendChild(renderer.domElement);
-  renderer.domElement.style.maxHeight = container.clientHeight+'px';
-  renderer.domElement.style.maxWidth = container.clientWidth+'px';
+  renderer.domElement.style.maxHeight = '100%';
+  renderer.domElement.style.maxWidth = '100%';
 
   var controls = new THREE.VRControls(camera);
   var effect = new THREE.VREffect(renderer);
@@ -54,6 +54,7 @@ PhotosphereRenderer.prototype.init = function() {
   this.effect = effect;
   this.controls = controls;
   this.manager = new WebVRManager(renderer, effect, {isUndistorted: true});
+  this.container = container;
 
   this.initScenes_();
 
@@ -75,6 +76,12 @@ PhotosphereRenderer.prototype.init = function() {
     });
   });
 };
+
+PhotosphereRenderer.prototype.updateDimensions = function(){
+    // this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+    // this.renderer.setSize(this.container.clientHeight, this.container.clientWidth);
+    console.log('wow');
+  }
 
 PhotosphereRenderer.prototype.render = function(timestamp) {
   this.controls.update();
@@ -229,6 +236,8 @@ PhotosphereRenderer.prototype.updateRenderRect_ = function() {
 
 PhotosphereRenderer.prototype.onModeChange_ = function(newMode, oldMode) {
   console.log('onModeChange_', newMode);
+
+  this.updateDimensions();
 
   var coefficients;
   if (newMode == WebVRManager.Modes.VR) {
