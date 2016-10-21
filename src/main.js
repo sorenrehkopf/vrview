@@ -17,197 +17,204 @@
 // vertex-based distortion.
 WebVRConfig = window.WebVRConfig || {}
 WebVRConfig.PREVENT_DISTORTION = true;
-window.element = document.querySelector('[googleVR]')||document.body;
-if(element!==document.body){
-  console.log('================',element.style);
+window.element = document.querySelectorAll('[googleVR]');
+element = element[0]?element:document.body;
+
+if(element.length){
+  element = element[0];
+  loadGoogleVR(element[0]);
+}else{
+  loadGoogleVR(element);
 }
 
-// Initialize the loading indicator as quickly as possible to give the user
-// immediate feedback.
-var LoadingIndicator = require('./loading-indicator');
-var loadIndicator = new LoadingIndicator();
+function loadGoogleVR(element){
+  // Initialize the loading indicator as quickly as possible to give the user
+  // immediate feedback.
+  var LoadingIndicator = require('./loading-indicator');
+  var loadIndicator = new LoadingIndicator();
 
-// Include relevant polyfills.
-require('../node_modules/webvr-polyfill/build/webvr-polyfill');
-var ES6Promise = require('../node_modules/es6-promise/dist/es6-promise.min');
-// Polyfill ES6 promises for IE.
-ES6Promise.polyfill();
+  // Include relevant polyfills.
+  require('../node_modules/webvr-polyfill/build/webvr-polyfill');
+  var ES6Promise = require('../node_modules/es6-promise/dist/es6-promise.min');
+  // Polyfill ES6 promises for IE.
+  ES6Promise.polyfill();
 
-var PhotosphereRenderer = require('./photosphere-renderer');
-var SceneLoader = require('./scene-loader');
-var Stats = require('../node_modules/stats-js/build/stats.min');
-var Util = require('./util');
+  var PhotosphereRenderer = require('./photosphere-renderer');
+  var SceneLoader = require('./scene-loader');
+  var Stats = require('../node_modules/stats-js/build/stats.min');
+  var Util = require('./util');
 
-// Include the DeviceMotionReceiver for the iOS cross domain iframe workaround.
-// This is a workaround for https://bugs.webkit.org/show_bug.cgi?id=150072.
-var DeviceMotionReceiver = require('./device-motion-receiver');
-var dmr = new DeviceMotionReceiver();
+  // Include the DeviceMotionReceiver for the iOS cross domain iframe workaround.
+  // This is a workaround for https://bugs.webkit.org/show_bug.cgi?id=150072.
+  var DeviceMotionReceiver = require('./device-motion-receiver');
+  var dmr = new DeviceMotionReceiver();
 
 
-window.addEventListener('load', init);
+  window.addEventListener('load', init);
 
-var stats = new Stats();
+  var stats = new Stats();
 
-var loader = new SceneLoader();
-loader.on('error', onSceneError);
-loader.on('load', onSceneLoad);
+  var loader = new SceneLoader();
+  loader.on('error', onSceneError);
+  loader.on('load', onSceneLoad);
 
-var renderer = new PhotosphereRenderer();
-renderer.on('error', onRenderError);
+  var renderer = new PhotosphereRenderer();
+  renderer.on('error', onRenderError);
 
-var videoElement = null;
-// TODO: Make this not global.
-// Currently global in order to allow callbacks.
-var loadedScene = null;
+  var videoElement = null;
+  // TODO: Make this not global.
+  // Currently global in order to allow callbacks.
+  var loadedScene = null;
 
-function init() {
-  if (!Util.isWebGLEnabled()) {
-    showError('WebGL not supported.');
-    return;
-  }
-  // Load the scene.
-  loader.loadScene();
-
-  if (Util.getQueryParameter('debug')) {
-    showStats();
-  }
-}
-
-function loadImage(src, params) {
-  renderer.on('load', onRenderLoad);
-  renderer.setPhotosphere(src, params);
-}
-
-function onSceneLoad(scene) {
-  if (!scene || !scene.isComplete()) {
-    showError('Scene failed to load');
-    return;
-  }
-
-  loadedScene = scene;
-
-  var params = {
-    isStereo: scene.isStereo,
-  }
-  renderer.setDefaultLookDirection(scene.yaw || 0);
-
-  if (scene.preview) {
-    var onPreviewLoad = function() {
-      loadIndicator.hide();
-      renderer.removeListener('load', onPreviewLoad);
-      renderer.setPhotosphere(scene.image, params);
+  function init() {
+    if (!Util.isWebGLEnabled()) {
+      showError('WebGL not supported.');
+      return;
     }
-    renderer.removeListener('load', onRenderLoad);
-    renderer.on('load', onPreviewLoad);
-    renderer.setPhotosphere(scene.preview, params);
-  } else if (scene.video) {
-    if (Util.isIOS() || Util.isIE11()) {
-      // On iOS and IE 11, if an 'image' param is provided, load it instead of
-      // showing an error.
-      //
-      // TODO(smus): Once video textures are supported, remove this fallback.
-      if (scene.image) {
-        loadImage(scene.image, params);
-      } else {
-        showError('Video is not supported on this platform (iOS or IE11).');
+    // Load the scene.
+    loader.loadScene();
+
+    if (Util.getQueryParameter('debug')) {
+      showStats();
+    }
+  }
+
+  function loadImage(src, params) {
+    renderer.on('load', onRenderLoad);
+    renderer.setPhotosphere(src, params);
+  }
+
+  function onSceneLoad(scene) {
+    if (!scene || !scene.isComplete()) {
+      showError('Scene failed to load');
+      return;
+    }
+
+    loadedScene = scene;
+
+    var params = {
+      isStereo: scene.isStereo,
+    }
+    renderer.setDefaultLookDirection(scene.yaw || 0);
+
+    if (scene.preview) {
+      var onPreviewLoad = function() {
+        loadIndicator.hide();
+        renderer.removeListener('load', onPreviewLoad);
+        renderer.setPhotosphere(scene.image, params);
       }
-    } else {
-      // Load the video element.
-      videoElement = document.createElement('video');
-      videoElement.src = scene.video;
-      videoElement.loop = true;
-      videoElement.setAttribute('crossorigin', 'anonymous');
-      videoElement.addEventListener('canplaythrough', onVideoLoad);
-      videoElement.addEventListener('error', onVideoError);
+      renderer.removeListener('load', onRenderLoad);
+      renderer.on('load', onPreviewLoad);
+      renderer.setPhotosphere(scene.preview, params);
+    } else if (scene.video) {
+      if (Util.isIOS() || Util.isIE11()) {
+        // On iOS and IE 11, if an 'image' param is provided, load it instead of
+        // showing an error.
+        //
+        // TODO(smus): Once video textures are supported, remove this fallback.
+        if (scene.image) {
+          loadImage(scene.image, params);
+        } else {
+          showError('Video is not supported on this platform (iOS or IE11).');
+        }
+      } else {
+        // Load the video element.
+        videoElement = document.createElement('video');
+        videoElement.src = scene.video;
+        videoElement.loop = true;
+        videoElement.setAttribute('crossorigin', 'anonymous');
+        videoElement.addEventListener('canplaythrough', onVideoLoad);
+        videoElement.addEventListener('error', onVideoError);
+      }
+    } else if (scene.image) {
+      // Otherwise, just render the photosphere.
+      loadImage(scene.image, params);
     }
-  } else if (scene.image) {
-    // Otherwise, just render the photosphere.
-    loadImage(scene.image, params);
+
+    console.log('Loaded scene', scene);
   }
 
-  console.log('Loaded scene', scene);
-}
+  function onVideoLoad() {
+    // Render the stereo video.
+    var params = {
+      isStereo: loadedScene.isStereo,
+    }
+    renderer.set360Video(videoElement, params);
 
-function onVideoLoad() {
-  // Render the stereo video.
-  var params = {
-    isStereo: loadedScene.isStereo,
+    // On mobile, tell the user they need to tap to start. Otherwise, autoplay.
+    if (!Util.isMobile()) {
+      // Hide loading indicator.
+      loadIndicator.hide();
+      // Autoplay the video on desktop.
+      videoElement.play();
+    } else {
+      // Tell user to tap to start.
+      showError('Tap to start video', 'Play');
+      element.addEventListener('touchend', onVideoTap);
+    }
+
+    // Prevent onVideoLoad from firing multiple times.
+    videoElement.removeEventListener('canplaythrough', onVideoLoad);
   }
-  renderer.set360Video(videoElement, params);
 
-  // On mobile, tell the user they need to tap to start. Otherwise, autoplay.
-  if (!Util.isMobile()) {
+  function onVideoTap() {
+    hideError();
+    videoElement.play();
+
+    // Prevent multiple play() calls on the video element.
+    element.removeEventListener('touchend', onVideoTap);
+  }
+
+  function onRenderLoad() {
     // Hide loading indicator.
     loadIndicator.hide();
-    // Autoplay the video on desktop.
-    videoElement.play();
-  } else {
-    // Tell user to tap to start.
-    showError('Tap to start video', 'Play');
-    element.addEventListener('touchend', onVideoTap);
   }
 
-  // Prevent onVideoLoad from firing multiple times.
-  videoElement.removeEventListener('canplaythrough', onVideoLoad);
-}
+  function onSceneError(message) {
+    showError('Loader: ' + message);
+  }
 
-function onVideoTap() {
-  hideError();
-  videoElement.play();
+  function onRenderError(message) {
+    showError('Render: ' + message);
+  }
 
-  // Prevent multiple play() calls on the video element.
-  element.removeEventListener('touchend', onVideoTap);
-}
+  function onVideoError(e) {
+    showError('Video load error');
+    console.log(e);
+  }
 
-function onRenderLoad() {
-  // Hide loading indicator.
-  loadIndicator.hide();
-}
+  function showError(message, opt_title) {
+    // Hide loading indicator.
+    loadIndicator.hide();
 
-function onSceneError(message) {
-  showError('Loader: ' + message);
-}
+    var error = document.querySelector('#error');
+    error.classList.add('visible');
+    error.querySelector('.message').innerHTML = message;
 
-function onRenderError(message) {
-  showError('Render: ' + message);
-}
+    var title = (opt_title !== undefined ? opt_title : 'Error');
+    error.querySelector('.title').innerHTML = title;
+  }
 
-function onVideoError(e) {
-  showError('Video load error');
-  console.log(e);
-}
+  function hideError() {
+    var error = document.querySelector('#error');
+    error.classList.remove('visible');
+  }
 
-function showError(message, opt_title) {
-  // Hide loading indicator.
-  loadIndicator.hide();
+  function showStats() {
+    stats.setMode(0); // 0: fps, 1: ms
 
-  var error = document.querySelector('#error');
-  error.classList.add('visible');
-  error.querySelector('.message').innerHTML = message;
+    // Align bottom-left.
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.bottom = '0px';
+    element.appendChild(stats.domElement);
+  }
 
-  var title = (opt_title !== undefined ? opt_title : 'Error');
-  error.querySelector('.title').innerHTML = title;
-}
-
-function hideError() {
-  var error = document.querySelector('#error');
-  error.classList.remove('visible');
-}
-
-function showStats() {
-  stats.setMode(0); // 0: fps, 1: ms
-
-  // Align bottom-left.
-  stats.domElement.style.position = 'absolute';
-  stats.domElement.style.left = '0px';
-  stats.domElement.style.bottom = '0px';
-  element.appendChild(stats.domElement);
-}
-
-function loop(time) {
-  stats.begin();
-  renderer.render(time);
-  stats.end();
+  function loop(time) {
+    stats.begin();
+    renderer.render(time);
+    stats.end();
+    requestAnimationFrame(loop);
+  }
   requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
+};
